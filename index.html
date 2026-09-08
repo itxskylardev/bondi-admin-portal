@@ -1122,11 +1122,193 @@ tr:last-child td{
         padding:15px;
     }
 }
+
+/* ================================
+   LOGIN SCREEN
+================================ */
+
+.login-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background:
+        linear-gradient(135deg, rgba(0, 109, 255, 0.92), rgba(0, 45, 120, 0.96)),
+        url("https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=2000&q=80");
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.login-box {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 18px;
+    padding: 35px;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
+}
+
+.login-brand {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-brand img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    border-radius: 14px;
+    margin-bottom: 15px;
+}
+
+.login-brand h1 {
+    font-size: 24px;
+    color: #0f172a;
+}
+
+.login-brand p {
+    color: #64748b;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.login-field {
+    margin-bottom: 18px;
+}
+
+.login-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 7px;
+}
+
+.login-field input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid #dbe1ea;
+    border-radius: 9px;
+    outline: none;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.login-field input:focus {
+    border-color: #006DFF;
+    box-shadow: 0 0 0 3px rgba(0, 109, 255, 0.1);
+}
+
+.login-button {
+    width: 100%;
+    border: none;
+    background: #006DFF;
+    color: white;
+    padding: 13px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.login-button:hover {
+    background: #0056cc;
+    transform: translateY(-1px);
+}
+
+.login-error {
+    display: none;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 15px;
+}
+
+.login-footer {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 11px;
+    margin-top: 22px;
+}
 </style>
 </head>
 
 <body>
+<!-- ================================
+     LOGIN SCREEN
+================================ -->
 
+<div class="login-screen" id="loginScreen">
+
+    <div class="login-box">
+
+        <div class="login-brand">
+            <img src="img.png" alt="Bondi Development">
+
+            <h1>Bondi Development</h1>
+
+            <p>
+                Enterprise Development & Systems Dashboard
+            </p>
+        </div>
+
+        <div class="login-error" id="loginError">
+            Invalid email or password.
+        </div>
+
+        <form id="loginForm">
+
+            <div class="login-field">
+                <label for="loginEmail">
+                    Email Address
+                </label>
+
+                <input
+                    type="email"
+                    id="loginEmail"
+                    placeholder="Enter your email"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+
+            <div class="login-field">
+                <label for="loginPassword">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="loginPassword"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <button
+                type="submit"
+                class="login-button"
+            >
+                Sign In
+            </button>
+
+        </form>
+
+        <div class="login-footer">
+            Bondi Development Internal Systems
+        </div>
+
+    </div>
+
+</div>
 <!-- ============================================================
      SIDEBAR
 ============================================================ -->
@@ -1186,6 +1368,22 @@ tr:last-child td{
         <span class="nav-icon">⚙</span>
         <span>Settings</span>
     </button>
+    <button
+    onclick="logout()"
+    style="
+        width:100%;
+        margin-top:20px;
+        padding:11px;
+        border:1px solid #fecaca;
+        background:#fff;
+        color:#dc2626;
+        border-radius:9px;
+        font-weight:700;
+        cursor:pointer;
+    "
+>
+    Log Out
+</button>
 
     <div class="sidebar-bottom">
 
@@ -3897,6 +4095,78 @@ window.addEventListener(
 );
 
 </script>
+<script>
+/* =========================================
+   BONDI DEVELOPMENT LOGIN SYSTEM
+========================================= */
 
+const LOGIN_EMAIL = "pollittjet@gmail.com";
+const LOGIN_PASSWORD = "Beargrowls26!";
+
+const loginScreen = document.getElementById("loginScreen");
+const loginForm = document.getElementById("loginForm");
+const loginError = document.getElementById("loginError");
+
+
+// Check whether the user is already logged in
+function checkLogin() {
+
+    const loggedIn = localStorage.getItem("bondi_logged_in");
+
+    if (loggedIn === "true") {
+        loginScreen.style.display = "none";
+    } else {
+        loginScreen.style.display = "flex";
+    }
+}
+
+
+// Handle login
+loginForm.addEventListener("submit", function(event) {
+
+    event.preventDefault();
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (
+        email === LOGIN_EMAIL &&
+        password === LOGIN_PASSWORD
+    ) {
+
+        // Save login
+        localStorage.setItem("bondi_logged_in", "true");
+
+        // Hide login screen
+        loginScreen.style.display = "none";
+
+        // Optional: clear fields
+        document.getElementById("loginEmail").value = "";
+        document.getElementById("loginPassword").value = "";
+
+        loginError.style.display = "none";
+
+    } else {
+
+        loginError.style.display = "block";
+
+        document.getElementById("loginPassword").value = "";
+    }
+
+});
+
+
+// Check login when page loads
+checkLogin();
+
+
+// Global logout function
+function logout() {
+
+    localStorage.removeItem("bondi_logged_in");
+
+    location.reload();
+}
+</script>
 </body>
 </html>
