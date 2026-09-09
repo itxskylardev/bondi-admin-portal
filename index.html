@@ -4204,5 +4204,613 @@ function logout() {
     location.reload();
 }
 </script>
+<script>
+
+/* ==============================================================
+   ORDER MANAGEMENT
+================================================================ */
+
+function ordersPage(){
+
+    const completedCount =
+        APP.orders.filter(order => order.status === "COMPLETED").length;
+
+    const paidCount =
+        APP.orders.filter(order => order.paid === true).length;
+
+    const activeCount =
+        APP.orders.filter(order => order.status !== "COMPLETED").length;
+
+    const revenue =
+        APP.orders
+        .filter(order => order.paid === true)
+        .reduce((total, order) => total + Number(order.price || 0), 0);
+
+
+    return `
+
+        <div class="page-head">
+
+            <div>
+                <h2>Development Orders</h2>
+                <p>Manage active development and infrastructure projects.</p>
+            </div>
+
+            <button
+                class="btn btn-primary"
+                onclick="createOrder()"
+            >
+                + New Order
+            </button>
+
+        </div>
+
+
+        <div class="stats">
+
+            <div class="stat-card">
+                <span class="stat-label">Total Orders</span>
+
+                <div class="stat-value">
+                    ${APP.orders.length}
+                </div>
+
+                <div class="stat-foot">
+                    Stored orders
+                </div>
+            </div>
+
+
+            <div class="stat-card">
+                <span class="stat-label">Active</span>
+
+                <div class="stat-value">
+                    ${activeCount}
+                </div>
+
+                <div class="stat-foot">
+                    In queue / development
+                </div>
+            </div>
+
+
+            <div class="stat-card">
+                <span class="stat-label">Completed</span>
+
+                <div class="stat-value">
+                    ${completedCount}
+                </div>
+
+                <div class="stat-foot positive">
+                    ${paidCount} paid
+                </div>
+            </div>
+
+
+            <div class="stat-card">
+                <span class="stat-label">Paid Revenue</span>
+
+                <div class="stat-value">
+                    $${revenue.toLocaleString()}
+                </div>
+
+                <div class="stat-foot positive">
+                    Confirmed payments
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-head">
+
+                <h3>Current Development Queue</h3>
+
+                <span>
+                    ${APP.orders.length} orders
+                </span>
+
+            </div>
+
+            ${
+                APP.orders.length
+                ? APP.orders.map(orderTemplate).join("")
+                : `
+                    <div class="empty">
+                        No orders currently exist.
+                    </div>
+                `
+            }
+
+        </div>
+
+    `;
+
+}
+
+
+
+/* ==============================================================
+   ORDER CARD
+================================================================ */
+
+function orderTemplate(order){
+
+    let badge = "badge-blue";
+
+    if(order.status === "COMPLETED")
+        badge = "badge-green";
+
+    else if(order.status === "REVIEW")
+        badge = "badge-orange";
+
+    else if(order.status === "CANCELLED")
+        badge = "badge-red";
+
+
+    const paymentBadge =
+        order.paid
+        ? `<span class="badge badge-green">PAID</span>`
+        : `<span class="badge badge-orange">UNPAID</span>`;
+
+
+    return `
+
+        <div class="order">
+
+            <div class="order-top">
+
+                <div>
+
+                    <div class="order-name">
+                        ${escapeOrderText(order.name)}
+                    </div>
+
+                    <div class="order-client">
+                        ${escapeOrderText(order.id)}
+                        •
+                        ${escapeOrderText(order.client)}
+                        •
+                        ${escapeOrderText(order.email)}
+                    </div>
+
+                </div>
+
+
+                <div class="order-price">
+                    $${Number(order.price).toLocaleString()}
+                </div>
+
+            </div>
+
+
+            <div class="order-details">
+                ${escapeOrderText(order.details)}
+            </div>
+
+
+            <div
+                class="order-status"
+                style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    gap:10px;
+                    flex-wrap:wrap;
+                "
+            >
+
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+
+                    <span class="badge ${badge}">
+                        ${order.status}
+                    </span>
+
+                    ${paymentBadge}
+
+                </div>
+
+
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+
+                    ${
+                        order.status !== "COMPLETED"
+                        ? `
+                            <button
+                                class="btn"
+                                onclick="completeOrder('${order.id}')"
+                            >
+                                ✓ Complete
+                            </button>
+                        `
+                        : ""
+                    }
+
+
+                    ${
+                        !order.paid
+                        ? `
+                            <button
+                                class="btn"
+                                onclick="markOrderPaid('${order.id}')"
+                            >
+                                $ Mark Paid
+                            </button>
+                        `
+                        : ""
+                    }
+
+
+                    <button
+                        class="btn btn-danger"
+                        onclick="deleteOrder('${order.id}')"
+                    >
+                        Delete
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+
+/* ==============================================================
+   CREATE ORDER
+================================================================ */
+
+function createOrder(){
+
+    const name =
+        prompt("Project / Order Name:");
+
+    if(!name)
+        return;
+
+
+    const client =
+        prompt("Client Name:");
+
+    if(!client)
+        return;
+
+
+    const email =
+        prompt("Client Email:");
+
+    if(!email)
+        return;
+
+
+    const priceInput =
+        prompt("Order Price:");
+
+    if(priceInput === null)
+        return;
+
+
+    const price =
+        Number(
+            priceInput
+            .replace("$","")
+            .replace(",","")
+        );
+
+
+    if(
+        !Number.isFinite(price) ||
+        price < 0
+    ){
+        alert("Please enter a valid price.");
+        return;
+    }
+
+
+    const details =
+        prompt(
+            "Order Requirements / Description:"
+        ) || "No additional project requirements provided.";
+
+
+    const id =
+        generateOrderID();
+
+
+    const newOrder = {
+
+        id:id,
+
+        name:name.trim(),
+
+        client:client.trim(),
+
+        email:email.trim(),
+
+        price:price,
+
+        status:"QUEUED",
+
+        paid:false,
+
+        details:details.trim(),
+
+        createdAt:new Date().toISOString()
+
+    };
+
+
+    APP.orders.unshift(newOrder);
+
+
+    saveOrders();
+
+
+    consoleLog(
+        `[ORDER] ${id} created for ${client}`,
+        "success"
+    );
+
+
+    render();
+
+}
+
+
+
+/* ==============================================================
+   COMPLETE ORDER
+================================================================ */
+
+function completeOrder(orderID){
+
+    const order =
+        APP.orders.find(
+            order => order.id === orderID
+        );
+
+
+    if(!order)
+        return;
+
+
+    if(
+        !confirm(
+            `Mark ${order.id} - ${order.name} as completed?`
+        )
+    ){
+        return;
+    }
+
+
+    order.status = "COMPLETED";
+
+    order.completedAt =
+        new Date().toISOString();
+
+
+    saveOrders();
+
+
+    consoleLog(
+        `[ORDER] ${order.id} marked COMPLETED`,
+        "success"
+    );
+
+
+    render();
+
+}
+
+
+
+/* ==============================================================
+   MARK ORDER PAID
+================================================================ */
+
+function markOrderPaid(orderID){
+
+    const order =
+        APP.orders.find(
+            order => order.id === orderID
+        );
+
+
+    if(!order)
+        return;
+
+
+    if(
+        !confirm(
+            `Confirm payment of $${Number(order.price).toLocaleString()} for ${order.id}?`
+        )
+    ){
+        return;
+    }
+
+
+    order.paid = true;
+
+    order.paidAt =
+        new Date().toISOString();
+
+
+    saveOrders();
+
+
+    consoleLog(
+        `[PAYMENT] ${order.id} payment confirmed - $${order.price}`,
+        "success"
+    );
+
+
+    render();
+
+}
+
+
+
+/* ==============================================================
+   DELETE ORDER
+================================================================ */
+
+function deleteOrder(orderID){
+
+    const order =
+        APP.orders.find(
+            order => order.id === orderID
+        );
+
+
+    if(!order)
+        return;
+
+
+    const confirmed =
+        confirm(
+            `Delete ${order.id} - ${order.name}?\n\nThis cannot be undone.`
+        );
+
+
+    if(!confirmed)
+        return;
+
+
+    APP.orders =
+        APP.orders.filter(
+            order => order.id !== orderID
+        );
+
+
+    saveOrders();
+
+
+    consoleLog(
+        `[ORDER] ${order.id} deleted`,
+        "warning"
+    );
+
+
+    render();
+
+}
+
+
+
+/* ==============================================================
+   ORDER ID GENERATOR
+================================================================ */
+
+function generateOrderID(){
+
+    let highest = 10482;
+
+
+    APP.orders.forEach(order => {
+
+        const number =
+            parseInt(
+                String(order.id)
+                .replace("#BD-","")
+                .replace("BD-","")
+            );
+
+
+        if(
+            Number.isFinite(number) &&
+            number > highest
+        ){
+            highest = number;
+        }
+
+    });
+
+
+    return "#BD-" + (highest + 1);
+
+}
+
+
+
+/* ==============================================================
+   SAVE / LOAD ORDERS
+================================================================ */
+
+function saveOrders(){
+
+    localStorage.setItem(
+        "bondi_orders",
+        JSON.stringify(APP.orders)
+    );
+
+}
+
+
+function loadOrders(){
+
+    try{
+
+        const saved =
+            localStorage.getItem(
+                "bondi_orders"
+            );
+
+
+        if(saved){
+
+            const parsed =
+                JSON.parse(saved);
+
+
+            if(Array.isArray(parsed)){
+
+                APP.orders = parsed.map(order=>({
+
+                    ...order,
+
+                    paid:
+                        order.paid === true
+
+                }));
+
+            }
+
+        }
+
+    }catch(error){
+
+        console.error(
+            "Failed to load saved orders:",
+            error
+        );
+
+    }
+
+}
+
+
+
+/* ==============================================================
+   SAFE TEXT OUTPUT
+================================================================ */
+
+function escapeOrderText(value){
+
+    return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+
+}
+
+</script>
 </body>
 </html>
