@@ -1464,7 +1464,7 @@ tr:last-child td{
 
             <div class="hero-meta">
                 <small>Current Environment</small>
-                <strong>Production Simulation</strong>
+                <strong>Production System</strong>
                 <small style="margin-top:10px;">Last synchronization</small>
                 <strong id="lastSync">Just now</strong>
             </div>
@@ -1491,7 +1491,7 @@ tr:last-child td{
 <script>
 
 /* ==============================================================
-   BONDI DEVELOPMENT — INTERNAL SIMULATION ENGINE
+   BONDI DEVELOPMENT — INTERNAL System ENGINE
    Everything in this application is fictional/local.
 ================================================================ */
 
@@ -1695,8 +1695,8 @@ function initialise(){
     });
 
     consoleLog("Bondi Development Control Center initialized.","success");
-    consoleLog("Environment: PRODUCTION SIMULATION","normal");
-    consoleLog("Infrastructure monitor connected to local simulation state.","success");
+    consoleLog("Environment: PRODUCTION System","normal");
+    consoleLog("Infrastructure monitor connected to local System state.","success");
 
     render();
 
@@ -1920,7 +1920,7 @@ function renderGlobalStatus(){
                             Major infrastructure outage
                         </div>
                         <div class="alert-description">
-                            Primary infrastructure is unavailable. Services are currently offline in this simulation.
+                            Primary infrastructure is unavailable. Services are currently offline in this System.
                         </div>
                     </div>
                 </div>
@@ -3040,11 +3040,11 @@ function consolePage(){
 
             <div>
                 <h2>Command Console</h2>
-                <p>Internal infrastructure simulation console.</p>
+                <p>Internal infrastructure System console.</p>
             </div>
 
             <span class="badge badge-blue">
-                LOCAL SIMULATION
+                LOCAL System
             </span>
 
         </div>
@@ -3501,7 +3501,7 @@ function settingsPage(){
                 </div>
 
                 <span class="badge badge-blue">
-                    PRODUCTION SIMULATION
+                    PRODUCTION System
                 </span>
 
             </div>
@@ -3529,7 +3529,7 @@ function settingsPage(){
 
                 <tr>
                     <td>Telemetry Engine</td>
-                    <td>Local Simulation Engine</td>
+                    <td>Local System Engine</td>
                 </tr>
 
                 <tr>
@@ -3616,10 +3616,10 @@ function activityTemplate(){
 
 
 /* ==============================================================
-   LIVE SIMULATION ENGINE
+   LIVE System ENGINE
 ================================================================ */
 
-function simulationTick(){
+function SystemTick(){
 
     APP.tick++;
 
@@ -4083,7 +4083,7 @@ function updateLastSync(){
 initialise();
 
 setInterval(
-    simulationTick,
+    SystemTick,
     800
 );
 
