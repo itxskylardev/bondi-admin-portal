@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bondi Development — Control Center</title>
-<link rel="icon" type="image/x-icon" href="./favicon.ico">
+<link rel="icon" href="./favicon.ico">
+
 <style>
 *{
     margin:0;
@@ -943,6 +944,50 @@ tr:last-child td{
 }
 
 /* ==============================
+   ANNOUNCEMENT PINS / ADMIN FORMS
+============================== */
+.announcement-pin{
+    background:white;
+    border:1px solid var(--border);
+    border-left:4px solid var(--blue);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    box-shadow:0 2px 8px rgba(15,23,42,.03);
+}
+.announcement-pin.pin-green{border-left-color:#16a34a}
+.announcement-pin.pin-orange{border-left-color:#f59e0b}
+.announcement-pin.pin-red{border-left-color:#ef4444}
+.announcement-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.announcement-title{font-size:12px;font-weight:750}
+.announcement-message{font-size:10px;color:var(--muted);line-height:1.55;margin-top:5px}
+.announcement-meta{font-size:9px;color:#94a3b8;margin-top:7px}
+.pin-label{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:750;text-transform:uppercase}
+.pin-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.pin-green .pin-dot{background:#16a34a}.pin-orange .pin-dot{background:#f59e0b}.pin-red .pin-dot{background:#ef4444}
+.admin-form{display:grid;gap:10px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-field{display:flex;flex-direction:column;gap:5px}
+.form-field.full{grid-column:1/-1}
+.form-field label{font-size:10px;font-weight:700;color:#475569}
+.form-field input,.form-field textarea,.form-field select{width:100%;border:1px solid var(--border);background:#fff;border-radius:8px;padding:9px 10px;font:inherit;font-size:11px;color:#0f172a;outline:none}
+.form-field textarea{min-height:85px;resize:vertical}
+.form-field input:focus,.form-field textarea:focus,.form-field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,109,255,.08)}
+.color-picker{display:flex;gap:7px}
+.color-choice{flex:1;border:1px solid var(--border);background:white;border-radius:8px;padding:8px;cursor:pointer;font-size:10px;font-weight:700}
+.color-choice.selected{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,109,255,.1)}
+.color-choice.green{color:#15803d}.color-choice.orange{color:#b45309}.color-choice.red{color:#dc2626}
+.form-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:4px}
+.incident-actions{display:flex;gap:6px;margin-top:10px}
+.incident-log-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:9px;color:#94a3b8}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.48);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100000}
+.admin-modal{width:min(620px,100%);max-height:90vh;overflow:auto;background:white;border-radius:14px;border:1px solid var(--border);box-shadow:0 25px 70px rgba(15,23,42,.25);padding:18px}
+.admin-modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:15px}
+.admin-modal-head h3{font-size:15px}.admin-modal-head p{font-size:10px;color:var(--muted);margin-top:3px}
+.modal-close{border:0;background:#f1f5f9;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:16px;color:#64748b}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}.form-field.full{grid-column:auto}}
+
+/* ==============================
    SETTINGS
 ============================== */
 
@@ -1477,6 +1522,8 @@ tr:last-child td{
 
         <div id="globalAlert"></div>
 
+        <div id="announcementPins"></div>
+
         <!-- ====================================================
              PAGE CONTENT
         ==================================================== -->
@@ -1665,8 +1712,15 @@ const APP = {
         }
     ],
 
-    console: []
+    console: [],
+
+    announcements: JSON.parse(localStorage.getItem("bondi_announcements") || "[]")
 };
+
+const savedIncidents = localStorage.getItem("bondi_incidents");
+if(savedIncidents){
+    try { APP.incidents = JSON.parse(savedIncidents); } catch(e) {}
+}
 
 
 /* ==============================================================
@@ -2893,140 +2947,253 @@ function averageLatency(){
    INCIDENTS
 ================================================================ */
 
-function incidentsPage(){
-
-    return `
-
-        <div class="page-head">
-
-            <div>
-                <h2>Incidents</h2>
-                <p>Infrastructure events, warnings and operational notices.</p>
-            </div>
-
-            <button class="btn btn-primary">
-                + Create Incident
-            </button>
-
-        </div>
-
-
-        <div class="stats">
-
-            <div class="stat-card">
-                <span class="stat-label">Open</span>
-                <div class="stat-value">
-                    ${APP.mode === "ACTIVE" ? "1" : "3"}
-                </div>
-                <div class="stat-foot ${
-                    APP.mode === "ACTIVE" ? "positive":"negative"
-                }">
-                    ${APP.mode === "ACTIVE" ? "Low activity":"Attention required"}
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Critical</span>
-                <div class="stat-value">
-                    ${APP.mode === "DOWN" ? "1" : "0"}
-                </div>
-                <div class="stat-foot">Last 24 hours</div>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Resolved</span>
-                <div class="stat-value">27</div>
-                <div class="stat-foot positive">This month</div>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Avg Resolution</span>
-                <div class="stat-value">18m</div>
-                <div class="stat-foot positive">-4m from last month</div>
-            </div>
-
-        </div>
-
-
-        <div class="panel">
-
-            <div class="panel-head">
-                <h3>Incident Feed</h3>
-                <span>Most recent first</span>
-            </div>
-
-            ${APP.mode === "DOWN" ? `
-
-                <div class="incident critical-incident">
-
-                    <div class="incident-top">
-
-                        <div class="incident-title">
-                            Major infrastructure outage
-                        </div>
-
-                        <span class="badge badge-red">
-                            CRITICAL
-                        </span>
-
-                    </div>
-
-                    <p>
-                        All simulated infrastructure nodes are currently offline.
-                        Service availability has dropped to 0% and workloads cannot
-                        be processed until infrastructure is restored.
-                    </p>
-
-                </div>
-
-            `:""}
-
-            ${APP.incidents.map(incident=>`
-
-                <div class="incident ${
-                    incident.severity === "CRITICAL"
-                    ? "critical-incident"
-                    : ""
-                }">
-
-                    <div class="incident-top">
-
-                        <div class="incident-title">
-                            ${incident.title}
-                        </div>
-
-                        <span class="badge ${
-                            incident.severity === "WARNING"
-                            ? "badge-orange"
-                            : "badge-blue"
-                        }">
-                            ${incident.severity}
-                        </span>
-
-                    </div>
-
-                    <p>
-                        ${incident.description}
-                    </p>
-
-                    <div style="
-                        margin-top:8px;
-                        font-size:9px;
-                        color:#94a3b8;
-                    ">
-                        Status: ${incident.status}
-                    </div>
-
-                </div>
-
-            `).join("")}
-
-        </div>
-
-    `;
-
+function saveAnnouncements(){
+    localStorage.setItem("bondi_announcements", JSON.stringify(APP.announcements));
 }
 
+function saveIncidents(){
+    localStorage.setItem("bondi_incidents", JSON.stringify(APP.incidents));
+}
+
+function esc(value){
+    return String(value ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+function formatDate(value){
+    return new Date(value).toLocaleString([], {
+        day:"2-digit", month:"short", year:"numeric",
+        hour:"2-digit", minute:"2-digit"
+    });
+}
+
+function announcementPins(){
+    const el=document.getElementById("announcementPins");
+    if(!el) return;
+
+    const active=APP.announcements.filter(a=>a.active !== false);
+    el.innerHTML=active.length ? active.map(a=>`
+        <div class="announcement-pin pin-${esc(a.color)}">
+            <div class="announcement-top">
+                <div>
+                    <div class="pin-label"><span class="pin-dot"></span> Pinned Announcement</div>
+                    <div class="announcement-title">${esc(a.title)}</div>
+                </div>
+                <span style="font-size:9px;color:#94a3b8;">${formatDate(a.createdAt)}</span>
+            </div>
+            <div class="announcement-message">${esc(a.message)}</div>
+            <div class="announcement-meta">Posted by ${esc(a.createdBy || "itxskylar")}</div>
+        </div>
+    `).join("") : "";
+}
+
+function selectAnnouncementColor(color, button){
+    document.getElementById("announcementColor").value=color;
+    document.querySelectorAll(".color-choice").forEach(b=>b.classList.remove("selected"));
+    button.classList.add("selected");
+}
+
+function createAnnouncement(){
+    const title=document.getElementById("announcementTitle").value.trim();
+    const message=document.getElementById("announcementMessage").value.trim();
+    const color=document.getElementById("announcementColor").value;
+
+    if(!title || !message){
+        alert("Please enter an announcement title and message.");
+        return;
+    }
+
+    APP.announcements.unshift({
+        id:"ANN-"+Math.floor(1000+Math.random()*9000),
+        title, message, color,
+        active:true,
+        createdBy:"itxskylar",
+        createdAt:new Date().toISOString()
+    });
+
+    saveAnnouncements();
+    closeAdminModal();
+    render();
+}
+
+function openAnnouncementModal(){
+    document.body.insertAdjacentHTML("beforeend", `
+        <div class="modal-backdrop" id="adminModal" onclick="if(event.target===this)closeAdminModal()">
+            <div class="admin-modal">
+                <div class="admin-modal-head">
+                    <div><h3>Create Announcement</h3><p>Pin a notice to the top of the control center.</p></div>
+                    <button class="modal-close" onclick="closeAdminModal()">×</button>
+                </div>
+                <div class="admin-form">
+                    <div class="form-field">
+                        <label>Announcement Title</label>
+                        <input id="announcementTitle" maxlength="80" placeholder="e.g. Scheduled Maintenance">
+                    </div>
+                    <div class="form-field">
+                        <label>Message</label>
+                        <textarea id="announcementMessage" maxlength="500" placeholder="Enter the announcement details..."></textarea>
+                    </div>
+                    <div class="form-field">
+                        <label>Pin Colour</label>
+                        <input type="hidden" id="announcementColor" value="green">
+                        <div class="color-picker">
+                            <button type="button" class="color-choice green selected" onclick="selectAnnouncementColor('green',this)">GREEN</button>
+                            <button type="button" class="color-choice orange" onclick="selectAnnouncementColor('orange',this)">ORANGE</button>
+                            <button type="button" class="color-choice red" onclick="selectAnnouncementColor('red',this)">RED</button>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn" onclick="closeAdminModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="createAnnouncement()">Publish Announcement</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+}
+
+function removeAnnouncement(id){
+    APP.announcements=APP.announcements.filter(a=>a.id!==id);
+    saveAnnouncements();
+    render();
+}
+
+function openIncidentModal(id=null){
+    const existing=id ? APP.incidents.find(i=>i.id===id) : null;
+    document.body.insertAdjacentHTML("beforeend", `
+        <div class="modal-backdrop" id="adminModal" onclick="if(event.target===this)closeAdminModal()">
+            <div class="admin-modal">
+                <div class="admin-modal-head">
+                    <div><h3>${existing ? "Update Incident" : "Log New Incident"}</h3><p>${existing ? "Modify the incident record and operational status." : "Create a persistent incident record for the operations log."}</p></div>
+                    <button class="modal-close" onclick="closeAdminModal()">×</button>
+                </div>
+                <div class="admin-form">
+                    <div class="form-grid">
+                        <div class="form-field full"><label>Incident Title</label><input id="incidentTitle" maxlength="100" value="${existing ? esc(existing.title) : ""}" placeholder="e.g. API Gateway Latency"></div>
+                        <div class="form-field"><label>Severity</label><select id="incidentSeverity">
+                            ${["INFO","WARNING","HIGH","CRITICAL"].map(v=>`<option ${existing && existing.severity===v ? "selected" : ""}>${v}</option>`).join("")}
+                        </select></div>
+                        <div class="form-field"><label>Status</label><select id="incidentStatus">
+                            ${["INVESTIGATING","IDENTIFIED","MONITORING","RESOLVED"].map(v=>`<option ${existing && existing.status===v ? "selected" : ""}>${v}</option>`).join("")}
+                        </select></div>
+                        <div class="form-field full"><label>Affected Service / Node</label><input id="incidentAffected" maxlength="100" value="${existing ? esc(existing.affected || "") : ""}" placeholder="e.g. Node-02 • API Gateway"></div>
+                        <div class="form-field full"><label>Description</label><textarea id="incidentDescription" maxlength="700" placeholder="Describe what happened and its impact...">${existing ? esc(existing.description) : ""}</textarea></div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn" onclick="closeAdminModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="saveIncident('${existing ? esc(existing.id) : ""}')">${existing ? "Save Changes" : "Log Incident"}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+}
+
+function saveIncident(id=""){
+    const title=document.getElementById("incidentTitle").value.trim();
+    const description=document.getElementById("incidentDescription").value.trim();
+    const severity=document.getElementById("incidentSeverity").value;
+    const status=document.getElementById("incidentStatus").value;
+    const affected=document.getElementById("incidentAffected").value.trim();
+
+    if(!title || !description){
+        alert("Please enter an incident title and description.");
+        return;
+    }
+
+    if(id){
+        const incident=APP.incidents.find(i=>i.id===id);
+        if(incident){
+            incident.title=title; incident.description=description;
+            incident.severity=severity; incident.status=status; incident.affected=affected;
+            incident.updatedAt=new Date().toISOString();
+        }
+    }else{
+        APP.incidents.unshift({
+            id:"INC-"+Math.floor(10000+Math.random()*90000),
+            title, description, severity, status, affected,
+            createdBy:"itxskylar",
+            createdAt:new Date().toISOString(),
+            updatedAt:new Date().toISOString()
+        });
+        consoleLog(`[INCIDENT] ${title} logged as ${severity}`,"warning");
+    }
+
+    saveIncidents();
+    closeAdminModal();
+    render();
+}
+
+function deleteIncident(id){
+    if(!confirm("Delete this incident record?")) return;
+    APP.incidents=APP.incidents.filter(i=>i.id!==id);
+    saveIncidents();
+    render();
+}
+
+function closeAdminModal(){
+    const modal=document.getElementById("adminModal");
+    if(modal) modal.remove();
+}
+
+function incidentsPage(){
+    const open=APP.incidents.filter(i=>i.status!=="RESOLVED").length;
+    const critical=APP.incidents.filter(i=>i.severity==="CRITICAL" && i.status!=="RESOLVED").length;
+    const resolved=APP.incidents.filter(i=>i.status==="RESOLVED").length;
+
+    return `
+        <div class="page-head">
+            <div><h2>Incidents</h2><p>Infrastructure events, warnings and operational notices.</p></div>
+            <button class="btn btn-primary" onclick="openIncidentModal()">+ Create Incident</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card"><span class="stat-label">Open</span><div class="stat-value">${open}</div><div class="stat-foot ${open ? "negative":"positive"}">${open ? "Attention required":"No active incidents"}</div></div>
+            <div class="stat-card"><span class="stat-label">Critical</span><div class="stat-value">${critical}</div><div class="stat-foot">Unresolved</div></div>
+            <div class="stat-card"><span class="stat-label">Resolved</span><div class="stat-value">${resolved}</div><div class="stat-foot positive">Logged records</div></div>
+            <div class="stat-card"><span class="stat-label">Total Logged</span><div class="stat-value">${APP.incidents.length}</div><div class="stat-foot">Persistent local log</div></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head"><h3>Incident Feed</h3><span>Most recent first</span></div>
+
+            ${APP.mode === "DOWN" ? `
+                <div class="incident critical-incident">
+                    <div class="incident-top"><div class="incident-title">Major infrastructure outage</div><span class="badge badge-red">CRITICAL</span></div>
+                    <p>All System infrastructure nodes are currently offline. Service availability has dropped to 0% and workloads cannot be processed until infrastructure is restored.</p>
+                    <div class="incident-log-meta"><span>System generated</span><span>Status: ACTIVE</span></div>
+                </div>` : ""}
+
+            ${APP.incidents.length ? APP.incidents.map(incident=>{
+                const sevClass=incident.severity==="CRITICAL" ? "badge-red" : incident.severity==="WARNING" ? "badge-orange" : incident.severity==="HIGH" ? "badge-red" : "badge-blue";
+                const incidentClass=incident.severity==="CRITICAL" || incident.severity==="HIGH" ? "critical-incident" : "";
+                return `
+                    <div class="incident ${incidentClass}">
+                        <div class="incident-top">
+                            <div class="incident-title">${esc(incident.title)}</div>
+                            <span class="badge ${sevClass}">${esc(incident.severity)}</span>
+                        </div>
+                        <p>${esc(incident.description)}</p>
+                        <div class="incident-log-meta">
+                            <span><strong>${esc(incident.id)}</strong></span>
+                            <span>Status: ${esc(incident.status)}</span>
+                            ${incident.affected ? `<span>Affected: ${esc(incident.affected)}</span>` : ""}
+                            <span>Created ${formatDate(incident.createdAt)}</span>
+                            <span>By ${esc(incident.createdBy || "itxskylar")}</span>
+                        </div>
+                        <div class="incident-actions">
+                            <button class="btn" onclick="openIncidentModal('${esc(incident.id)}')">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteIncident('${esc(incident.id)}')">Delete</button>
+                        </div>
+                    </div>`;
+            }).join("") : `<div class="empty">No incident records have been logged.</div>`}
+        </div>
+    `;
+}
 
 /* ==============================================================
    COMMAND CONSOLE
@@ -3373,183 +3540,51 @@ function executeCommand(event){
 ================================================================ */
 
 function settingsPage(){
-
     return `
-
-        <div class="page-head">
-
-            <div>
-                <h2>System Settings</h2>
-                <p>Control the simulated Bondi Development environment.</p>
-            </div>
-
-        </div>
-
+        <div class="page-head"><div><h2>System Settings</h2><p>Control the System Bondi Development environment.</p></div></div>
 
         <div class="panel">
-
-            <div class="panel-head">
-                <h3>Infrastructure State</h3>
-                <span>Global setting</span>
-            </div>
-
-
-            <div class="setting-row">
-
-                <div>
-                    <div class="setting-title">
-                        Operating Mode
-                    </div>
-
-                    <div class="setting-description">
-                        Controls how the simulated infrastructure behaves across every page.
-                    </div>
-                </div>
-
-
-                <div class="mode-buttons">
-
-                    <button
-                        class="mode-btn ${
-                            APP.mode === "ACTIVE"
-                            ? "active-mode"
-                            : ""
-                        }"
-                        onclick="setMode('ACTIVE')">
-                        ACTIVE
-                    </button>
-
-                    <button
-                        class="mode-btn ${
-                            APP.mode === "BACKUP"
-                            ? "active-mode"
-                            : ""
-                        }"
-                        onclick="setMode('BACKUP')">
-                        BACKUP
-                    </button>
-
-                    <button
-                        class="mode-btn ${
-                            APP.mode === "DOWN"
-                            ? "active-mode"
-                            : ""
-                        }"
-                        onclick="setMode('DOWN')">
-                        DOWN
-                    </button>
-
-                </div>
-
-            </div>
-
-
-            <div class="setting-row">
-
-                <div>
-
-                    <div class="setting-title">
-                        Telemetry Engine
-                    </div>
-
-                    <div class="setting-description">
-                        Generate continuous CPU, memory, latency and heartbeat values.
-                    </div>
-
-                </div>
-
-                <span class="badge badge-green">
-                    RUNNING
-                </span>
-
-            </div>
-
-
-            <div class="setting-row">
-
-                <div>
-
-                    <div class="setting-title">
-                        Automatic Updates
-                    </div>
-
-                    <div class="setting-description">
-                        Dashboard values refresh automatically every 800 milliseconds.
-                    </div>
-
-                </div>
-
-                <span class="badge badge-green">
-                    ENABLED
-                </span>
-
-            </div>
-
-
-            <div class="setting-row">
-
-                <div>
-
-                    <div class="setting-title">
-                        Environment
-                    </div>
-
-                    <div class="setting-description">
-                        Current environment used by this local application.
-                    </div>
-
-                </div>
-
-                <span class="badge badge-blue">
-                    PRODUCTION System
-                </span>
-
-            </div>
-
+            <div class="panel-head"><h3>Infrastructure State</h3><span>Global setting</span></div>
+            <div class="setting-row"><div><div class="setting-title">Operating Mode</div><div class="setting-description">Controls how the System infrastructure behaves across every page.</div></div><div class="mode-buttons">
+                <button class="mode-btn ${APP.mode==="ACTIVE"?"active-mode":""}" onclick="setMode('ACTIVE')">ACTIVE</button>
+                <button class="mode-btn ${APP.mode==="BACKUP"?"active-mode":""}" onclick="setMode('BACKUP')">BACKUP</button>
+                <button class="mode-btn ${APP.mode==="DOWN"?"active-mode":""}" onclick="setMode('DOWN')">DOWN</button>
+            </div></div>
+            <div class="setting-row"><div><div class="setting-title">Telemetry Engine</div><div class="setting-description">Generate continuous CPU, memory, latency and heartbeat values.</div></div><span class="badge badge-green">RUNNING</span></div>
+            <div class="setting-row"><div><div class="setting-title">Automatic Updates</div><div class="setting-description">Dashboard values refresh automatically every 800 milliseconds.</div></div><span class="badge badge-green">ENABLED</span></div>
+            <div class="setting-row"><div><div class="setting-title">Environment</div><div class="setting-description">Current environment used by this local application.</div></div><span class="badge badge-blue">PRODUCTION System</span></div>
         </div>
 
+        <div class="panel">
+            <div class="panel-head"><div><h3>Announcement Pins</h3><span>Create notices displayed at the top of the control center.</span></div><button class="btn btn-primary" onclick="openAnnouncementModal()">+ New Announcement</button></div>
+            ${APP.announcements.length ? APP.announcements.map(a=>`
+                <div class="announcement-pin pin-${esc(a.color)}">
+                    <div class="announcement-top"><div><div class="pin-label"><span class="pin-dot"></span> ${esc(a.color)} PIN</div><div class="announcement-title">${esc(a.title)}</div></div><button class="btn btn-danger" onclick="removeAnnouncement('${esc(a.id)}')">Remove</button></div>
+                    <div class="announcement-message">${esc(a.message)}</div>
+                    <div class="announcement-meta">${esc(a.id)} • Posted by ${esc(a.createdBy || "itxskylar")} • ${formatDate(a.createdAt)}</div>
+                </div>`).join("") : `<div class="empty">No announcement pins have been created.</div>`}
+        </div>
 
         <div class="panel">
+            <div class="panel-head"><h3>Incident Management</h3><span>Persistent local incident records</span></div>
+            <div class="setting-row"><div><div class="setting-title">Incident Records</div><div class="setting-description">Create, update and remove operational incidents from the Incidents page.</div></div><button class="btn btn-primary" onclick="navigate('incidents');setTimeout(openIncidentModal,50)">Manage Incidents</button></div>
+            <div class="setting-row"><div><div class="setting-title">Logged Incidents</div><div class="setting-description">Total incident records currently stored in this browser.</div></div><strong>${APP.incidents.length}</strong></div>
+        </div>
 
-            <div class="panel-head">
-                <h3>System Information</h3>
-            </div>
-
+        <div class="panel">
+            <div class="panel-head"><h3>System Information</h3></div>
             <table>
-
-                <tr>
-                    <td>Application</td>
-                    <td>Bondi Development Control Center</td>
-                </tr>
-
-                <tr>
-                    <td>Build</td>
-                    <td>BD-CC 4.8.2</td>
-                </tr>
-
-                <tr>
-                    <td>Telemetry Engine</td>
-                    <td>Local System Engine</td>
-                </tr>
-
-                <tr>
-                    <td>Nodes Registered</td>
-                    <td>6</td>
-                </tr>
-
-                <tr>
-                    <td>Session</td>
-                    <td>itxskylar / CEO</td>
-                </tr>
-
+                <tr><td>Application</td><td>Bondi Development Control Center</td></tr>
+                <tr><td>Build</td><td>BD-CC 4.8.2</td></tr>
+                <tr><td>Telemetry Engine</td><td>Local System Engine</td></tr>
+                <tr><td>Nodes Registered</td><td>6</td></tr>
+                <tr><td>Session</td><td>itxskylar / CEO</td></tr>
+                <tr><td>Announcements</td><td>${APP.announcements.length} pinned</td></tr>
+                <tr><td>Incidents</td><td>${APP.incidents.length} logged</td></tr>
             </table>
-
         </div>
-
     `;
-
 }
-
 
 /* ==============================================================
    ACTIVITY
@@ -4052,6 +4087,7 @@ function render(){
 
 
     renderGlobalStatus();
+    announcementPins();
 
     requestAnimationFrame(drawHeartbeats);
 
